@@ -1,0 +1,28 @@
+version: '3'
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: dam
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - dam
+
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - "6380:6379"
+    networks:
+      - dam
+
+networks:
+  dam:

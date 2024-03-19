@@ -1,0 +1,18 @@
+# Go binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test and coverage files
+*.test
+*.out
+*.cover
+
+# Go build output
+/bin/
+/pkg/
+
+# Ignore data folder
+/data/
