@@ -16,6 +16,8 @@ import (
 
 type DirectoryHandler struct {
 	DirectoryRepo repositories.DirectoryRepoInterface
+	FileRepo      repositories.FileRepoInterface
+	db            *gorm.DB
 }
 
 type DirectoryHandlerInterface interface {
@@ -24,11 +26,14 @@ type DirectoryHandlerInterface interface {
 	GetDirectoryDetailsByID(c *gin.Context)
 	GetDirectoryByID(c *gin.Context)
 	ListFilesOrFoldersByDirectoryID(c *gin.Context)
+	MoveDirectories(c *gin.Context)
 }
 
 func NewDirectoryHandler(db *gorm.DB) DirectoryHandlerInterface {
 	return &DirectoryHandler{
 		DirectoryRepo: repositories.NewDirectoryRepo(db),
+		FileRepo:      repositories.NewFileRepo(db),
+		db:            db,
 	}
 }
 
@@ -56,7 +61,7 @@ func (h *DirectoryHandler) CreateDirectory(c *gin.Context) {
 	}
 
 	directionID := uuid.New().String()
-	fullPath := parentDirectory.FullPath + "/" + parentDirectory.DirectoryID
+	fullPath := parentDirectory.FullPath + "/" + directionID
 	dir := &models.Directory{
 		DirectoryID:       directionID,
 		Name:              createDirReq.Name,
@@ -228,4 +233,56 @@ func (h *DirectoryHandler) ListFilesOrFoldersByDirectoryID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, filesOrFolders)
+}
+
+func (h *DirectoryHandler) MoveDirectories(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var moveDirReq apis.MoveDirectoriesRequest
+	if err := c.BindJSON(&moveDirReq); err != nil {
+		c.JSON(http.StatusBadRequest, apis.ErrorResponse{
+			Message: err.Error(),
+			Code:    enums.BindJSONError,
+		})
+		return
+	}
+
+	err := h.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		destinationDirectory, err := h.DirectoryRepo.GetDirectoryByID(ctx, moveDirReq.DestinationDirectoryID)
+		if err != nil {
+			return err
+		}
+
+		for _, sourceDirectoryID := range moveDirReq.SourceDirectoryIDs {
+			sourceDirectory, err := h.DirectoryRepo.GetDirectoryByID(ctx, sourceDirectoryID)
+			if err != nil {
+				return err
+			}
+
+			sourceDirectory.UpdatedAt = time.Now()
+			sourceDirectory.ParentDirectoryID = destinationDirectory.DirectoryID
+			if err := h.DirectoryRepo.UpdateDirectory(ctx, sourceDirectory); err != nil {
+				return err
+			}
+
+			if err := h.DirectoryRepo.MoveDirectory(ctx, sourceDirectory, destinationDirectory); err != nil {
+				return err
+			}
+
+			if err := h.FileRepo.MoveDirectory(ctx, sourceDirectory, destinationDirectory); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, apis.ErrorResponse{
+			Message: err.Error(),
+			Code:    enums.InternalError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
 }

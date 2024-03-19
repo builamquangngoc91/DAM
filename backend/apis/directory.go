@@ -19,6 +19,11 @@ type UpdateDirectoryResponse struct {
 	DirectoryID string `json:"directory_id"`
 }
 
+type MoveDirectoriesRequest struct {
+	SourceDirectoryIDs     []string `json:"source_directory_ids"`
+	DestinationDirectoryID string   `json:"destination_directory_id"`
+}
+
 type Directory struct {
 	DirectoryID       string    `json:"directory_id"`
 	Name              string    `json:"name"`
@@ -29,4 +34,3 @@ type Directory struct {
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }
-

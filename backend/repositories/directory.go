@@ -13,6 +13,7 @@ type DirectoryRepoInterface interface {
 	GetDirectoryByID(ctx context.Context, directoryID string) (*models.Directory, error)
 	GetDirectoryByFullPath(ctx context.Context, fullPath string) (*models.Directory, error)
 	ListFilesOrFoldersByDirectoryID(ctx context.Context, directoryID string, orderBy string, limit, offset int) ([]models.FileOrFolder, error)
+	MoveDirectory(ctx context.Context, sourceDirectory, destinationDirectory *models.Directory) error
 }
 
 type DirectoryRepo struct {
@@ -65,4 +66,15 @@ func (r *DirectoryRepo) ListFilesOrFoldersByDirectoryID(ctx context.Context, dir
 		Error
 
 	return filesOrFolders, err
+}
+
+func (r *DirectoryRepo) MoveDirectory(ctx context.Context, sourceDirectory, destinationDirectory *models.Directory) error {
+	return r.db.
+		WithContext(ctx).
+		Exec(`
+			UPDATE directories
+			SET full_path = REPLACE(full_path, ?, ?)
+			WHERE full_path LIKE ?
+		`, sourceDirectory.FullPath, destinationDirectory.FullPath+"/"+sourceDirectory.DirectoryID, sourceDirectory.FullPath+"%").
+		Error
 }

@@ -54,6 +54,7 @@ func main() {
 	router.GET("/directories/:directory_id/details", middlewares.Authentication(rdClient), directoryHandler.GetDirectoryByID)
 	router.POST("/directories/:directory_id/files", middlewares.Authentication(rdClient), fileHandler.UploadFile)
 	router.GET("/directories/:directory_id", middlewares.Authentication(rdClient), directoryHandler.ListFilesOrFoldersByDirectoryID)
+	router.POST("/directories/move", middlewares.Authentication(rdClient), directoryHandler.MoveDirectories)
 
 	// TODO: add ping and health
 	srv := &http.Server{
