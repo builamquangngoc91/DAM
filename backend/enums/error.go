@@ -15,4 +15,8 @@ const (
 	AuthorizationHeaderRequiredError Error = 200008
 	UnexpectedError                  Error = 200009
 	InvalidTokenError                Error = 200010
+	DirectoryNotFoundError           Error = 200011
+	InsufficientPermissionError      Error = 200012
+	MissingFileError                 Error = 200013
+	FileNotFoundError                Error = 200014
 )

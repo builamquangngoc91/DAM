@@ -38,6 +38,8 @@ func main() {
 	defer stop()
 
 	userHandler := handlers.NewUserHandler(db, rdClient)
+	directoryHandler := handlers.NewDirectoryHandler(db)
+	fileHandler := handlers.NewFileHandler(db)
 
 	router := gin.Default()
 
@@ -47,8 +49,13 @@ func main() {
 	router.GET("/users/me", middlewares.Authentication(rdClient), userHandler.GetCurrentUser)
 	router.PUT("/users/me", middlewares.Authentication(rdClient), userHandler.UpdateUser)
 
-	// TODO: add ping and health
+	router.POST("/directories", middlewares.Authentication(rdClient), directoryHandler.CreateDirectory)
+	router.PUT("/directories/:directory_id", middlewares.Authentication(rdClient), directoryHandler.UpdateDirectory)
+	router.GET("/directories/:directory_id/details", middlewares.Authentication(rdClient), directoryHandler.GetDirectoryByID)
+	router.POST("/directories/:directory_id/files", middlewares.Authentication(rdClient), fileHandler.UploadFile)
+	router.GET("/directories/:directory_id", middlewares.Authentication(rdClient), directoryHandler.ListFilesOrFoldersByDirectoryID)
 
+	// TODO: add ping and health
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", config.Cfg.Application.Port),
 		Handler: router,
