@@ -6,6 +6,11 @@ type UploadFileResponse struct {
 	FileID string `json:"file_id"`
 }
 
+type MoveFilesRequest struct {
+	SourceFileIDs          []string `json:"source_file_ids"`
+	DestinationDirectoryID string   `json:"destination_directory_id"`
+}
+
 type File struct {
 	FileID      string    `json:"file_id"`
 	Name        string    `json:"name"`
