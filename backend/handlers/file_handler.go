@@ -6,6 +6,7 @@ import (
 	"dam/models"
 	"dam/repositories"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ type FileHandler struct {
 type FileHandlerInterface interface {
 	UploadFile(c *gin.Context)
 	GetFile(c *gin.Context)
+	MoveFiles(c *gin.Context)
 }
 
 func NewFileHandler(db *gorm.DB) FileHandlerInterface {
@@ -46,7 +48,8 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 	}
 
 	directoryID := c.Param("directory_id")
-	if _, err := h.DirectoryRepo.GetDirectoryByID(ctx, directoryID); err != nil {
+	directory, err := h.DirectoryRepo.GetDirectoryByID(ctx, directoryID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, apis.ErrorResponse{
 			Message: "Directory not found",
 			Code:    enums.DirectoryNotFoundError,
@@ -69,6 +72,7 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 		Name:        fileHeader.Filename,
 		Size:        fileHeader.Size,
 		Extension:   fileHeader.Header.Get("Content-Type"),
+		FullPath:    directory.FullPath + "/" + fileHeader.Filename,
 		UserID:      userID,
 		DirectoryID: directoryID,
 		CreatedAt:   time.Now(),
@@ -112,4 +116,52 @@ func (h *FileHandler) GetFile(c *gin.Context) {
 		CreatedAt:   file.CreatedAt,
 		UpdatedAt:   file.UpdatedAt,
 	})
+}
+
+func (h *FileHandler) MoveFiles(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req apis.MoveFilesRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apis.ErrorResponse{
+			Message: err.Error(),
+			Code:    enums.BindJSONError,
+		})
+		return
+	}
+
+	destinationDirectory, err := h.DirectoryRepo.GetDirectoryByID(ctx, req.DestinationDirectoryID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, apis.ErrorResponse{
+			Message: "Destination directory not found",
+			Code:    enums.DirectoryNotFoundError,
+		})
+		return
+	}
+
+	for _, fileID := range req.SourceFileIDs {
+		file, err := h.FileRepo.GetFileByID(ctx, fileID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, apis.ErrorResponse{
+				Message: "File not found",
+				Code:    enums.FileNotFoundError,
+			})
+			return
+		}
+
+		textNeedReplaced := file.FullPath[0:strings.LastIndex(file.FullPath, "/")]
+		file.FullPath = strings.ReplaceAll(file.FullPath, textNeedReplaced, destinationDirectory.FullPath)
+		file.DirectoryID = destinationDirectory.DirectoryID
+		file.UpdatedAt = time.Now()
+
+		if err := h.FileRepo.UpdateFile(ctx, file); err != nil {
+			c.JSON(http.StatusInternalServerError, apis.ErrorResponse{
+				Message: err.Error(),
+				Code:    enums.InternalError,
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
 }
