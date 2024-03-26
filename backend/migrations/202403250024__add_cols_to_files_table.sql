@@ -1,0 +1,3 @@
+ALTER TABLE files
+ADD COLUMN description TEXT,
+ADD COLUMN tags _TEXT;

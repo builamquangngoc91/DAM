@@ -5,6 +5,8 @@ import (
 	"dam/enums"
 	"dam/models"
 	"dam/repositories"
+
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -15,14 +17,16 @@ import (
 )
 
 type FileHandler struct {
-	UserRepo      repositories.UserRepoInterface
-	DirectoryRepo repositories.DirectoryRepoInterface
-	FileRepo      repositories.FileRepoInterface
+	UserRepo        repositories.UserRepoInterface
+	UserSettingRepo repositories.UserSettingRepoInterface
+	DirectoryRepo   repositories.DirectoryRepoInterface
+	FileRepo        repositories.FileRepoInterface
 }
 
 type FileHandlerInterface interface {
 	UploadFile(c *gin.Context)
 	GetFile(c *gin.Context)
+	UpdateFile(c *gin.Context)
 	MoveFiles(c *gin.Context)
 }
 
@@ -98,8 +102,15 @@ func (h *FileHandler) GetFile(c *gin.Context) {
 	fileID := c.Param("file_id")
 	file, err := h.FileRepo.GetFileByID(ctx, fileID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, apis.ErrorResponse{
+				Message: "File not found",
+				Code:    enums.FileNotFoundError,
+			})
+			return
+		}
 		c.JSON(http.StatusNotFound, apis.ErrorResponse{
-			Message: "File not found",
+			Message: err.Error(),
 			Code:    enums.FileNotFoundError,
 		})
 		return
@@ -113,9 +124,55 @@ func (h *FileHandler) GetFile(c *gin.Context) {
 		UserID:      file.UserID,
 		DirectoryID: file.DirectoryID,
 		FullPath:    file.FullPath,
+		Description: file.Description,
+		Tags:        file.Tags,
 		CreatedAt:   file.CreatedAt,
 		UpdatedAt:   file.UpdatedAt,
 	})
+}
+
+func (h *FileHandler) UpdateFile(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req apis.UpdateFileRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apis.ErrorResponse{
+			Message: err.Error(),
+			Code:    enums.BindJSONError,
+		})
+		return
+	}
+
+	fileID := c.Param("file_id")
+	file, err := h.FileRepo.GetFileByID(ctx, fileID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, apis.ErrorResponse{
+				Message: "File not found",
+				Code:    enums.FileNotFoundError,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, apis.ErrorResponse{
+			Message: err.Error(),
+			Code:    enums.InternalError,
+		})
+		return
+	}
+
+	file.Description = req.Description
+	file.Tags = req.Tags
+	file.UpdatedAt = time.Now()
+
+	if err := h.FileRepo.UpdateFile(ctx, file); err != nil {
+		c.JSON(http.StatusInternalServerError, apis.ErrorResponse{
+			Message: err.Error(),
+			Code:    enums.InternalError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *FileHandler) MoveFiles(c *gin.Context) {
