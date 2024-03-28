@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/lib/pq"
+)
 
 type File struct {
 	FileID      string
@@ -10,6 +14,8 @@ type File struct {
 	UserID      string
 	DirectoryID string
 	FullPath    string
+	Description string
+	Tags        pq.StringArray `gorm:"type:_text"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

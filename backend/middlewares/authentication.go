@@ -14,7 +14,6 @@ import (
 )
 
 func Authentication(rdClient *redis.Client) gin.HandlerFunc {
-
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 

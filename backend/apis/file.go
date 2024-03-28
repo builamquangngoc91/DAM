@@ -11,6 +11,11 @@ type MoveFilesRequest struct {
 	DestinationDirectoryID string   `json:"destination_directory_id"`
 }
 
+type UpdateFileRequest struct {
+	Description string   `json:"description"`
+	Tags        []string `json:"tags"`
+}
+
 type File struct {
 	FileID      string    `json:"file_id"`
 	Name        string    `json:"name"`
@@ -19,6 +24,8 @@ type File struct {
 	UserID      string    `json:"user_id"`
 	DirectoryID string    `json:"directory_id"`
 	FullPath    string    `json:"full_path"`
+	Description string    `json:"description"`
+	Tags        []string  `json:"tags"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
