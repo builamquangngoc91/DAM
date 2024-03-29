@@ -3,7 +3,7 @@ package apis
 import "time"
 
 type UploadFileResponse struct {
-	FileID string `json:"file_id"`
+	FileVersionID string `json:"file_version_id"`
 }
 
 type MoveFilesRequest struct {
@@ -14,6 +14,11 @@ type MoveFilesRequest struct {
 type UpdateFileRequest struct {
 	Description string   `json:"description"`
 	Tags        []string `json:"tags"`
+}
+
+type ListFileVersions struct {
+	File         File          `json:"file"`
+	FileVersions []FileVersion `json:"file_versions"`
 }
 
 type File struct {
@@ -28,4 +33,14 @@ type File struct {
 	Tags        []string  `json:"tags"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type FileVersion struct {
+	FileVersionID string    `json:"file_version_id"`
+	FileID        string    `json:"file_id"`
+	Size          int64     `json:"size"`
+	Extension     string    `json:"extension"`
+	UserID        string    `json:"user_id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }

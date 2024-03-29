@@ -62,6 +62,7 @@ func main() {
 	router.POST("/files/move", middlewares.Authentication(rdClient), fileHandler.MoveFiles)
 	router.GET("/files/:file_id", middlewares.Authentication(rdClient), fileHandler.GetFile)
 	router.PUT("/files/:file_id", middlewares.Authentication(rdClient), fileHandler.UpdateFile)
+	router.GET("/files/:file_id/versions", middlewares.Authentication(rdClient), fileHandler.ListFileVersions)
 
 	// TODO: add ping and health
 	srv := &http.Server{
