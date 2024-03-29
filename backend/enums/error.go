@@ -19,4 +19,5 @@ const (
 	InsufficientPermissionError      Error = 200012
 	MissingFileError                 Error = 200013
 	FileNotFoundError                Error = 200014
+	FileVersionNotFoundError         Error = 200015
 )
